@@ -1,0 +1,11 @@
+{
+    "/api/auth/login": "/login",
+    "/api/auth/register": "/register",
+    "/api/auth/profile": "/users/1",
+    "/api/products": "/products",
+    "/api/products/:id": "/products/:id",
+    "/api/orders": "/orders",
+    "/api/orders/:id": "/orders/:id",
+    "/api/orders/myorders": "/orders",
+    "/api/upload": "/uploads"
+}
