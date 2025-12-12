@@ -106,7 +106,66 @@ seedDatabase();
 
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     console.log(`✅ Custom JSON Server is running on port ${PORT}`);
     console.log(`Protected routes enabled.`);
+
+    // ------------------------------------------
+    // SELF-SEEDING (Ensure Super Admin Exists via API)
+    // ------------------------------------------
+    try {
+        const fetch = (await import('node-fetch')).default || global.fetch; // Robust fetch import
+        if (!fetch) {
+            console.error("⚠️ Node fetch not found. Skipping auto-seed. Please register manually.");
+            return;
+        }
+
+        const superAdminEmail = 'Abdellah@cosmutics.com';
+        const password = '123456789';
+
+        // 1. Check if user exists (Login attempt) or just try to register
+        // Simpler: Try to login. If fail, register.
+
+        console.log("🌱 Checking Super Admin status...");
+
+        // We use localhost for internal seeding
+        const loginUrl = `http://localhost:${PORT}/login`;
+        const registerUrl = `http://localhost:${PORT}/register`;
+
+        const loginRes = await fetch(loginUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: superAdminEmail, password })
+        });
+
+        if (loginRes.ok) {
+            console.log("✅ Super Admin already exists and verified.");
+        } else {
+            console.log("⚠️ Super Admin missing or invalid. Attempting to Register...");
+
+            const regRes = await fetch(registerUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: superAdminEmail,
+                    password: password,
+                    name: 'Abdellah Taha',
+                    role: 'admin',
+                    phone: '01000000000'
+                })
+            });
+
+            if (regRes.ok) {
+                console.log("✅ Super Admin Successfully Created via API!");
+                console.log("👉 Credentials: Abdellah@cosmutics.com / 123456789");
+            } else {
+                const errText = await regRes.text();
+                console.error("❌ Failed to auto-seed Super Admin:", errText);
+                // Fallback: If it failed because "Email already exists" but password was wrong?
+                // We can't easily fix that without admin access or deleting db.json manually.
+            }
+        }
+    } catch (e) {
+        console.error("⚠️ Auto-seeding error:", e.message);
+    }
 });
