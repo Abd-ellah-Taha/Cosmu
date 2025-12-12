@@ -123,47 +123,39 @@ server.listen(PORT, async () => {
         const superAdminEmail = 'Abdellah@cosmutics.com';
         const password = '123456789';
 
-        // 1. Check if user exists (Login attempt) or just try to register
-        // Simpler: Try to login. If fail, register.
+        // 1. Force Reset Strategy: Always try to delete first to ensure clean state
+        console.log("🌱 enforcing Super Admin credentials...");
 
-        console.log("🌱 Checking Super Admin status...");
+        // Find user by email in lowdb direclty
+        const db = router.db;
+        const users = db.get('users').value();
+        const existingAdmin = users.find(u => u.email === superAdminEmail);
 
-        // We use localhost for internal seeding
-        const loginUrl = `http://localhost:${PORT}/login`;
-        const registerUrl = `http://localhost:${PORT}/register`;
+        if (existingAdmin) {
+            console.log("⚠️ Found existing Super Admin. Removing to force password reset...");
+            db.get('users').remove({ email: superAdminEmail }).write();
+        }
 
-        const loginRes = await fetch(loginUrl, {
+        // 2. Register fresh via API (Guarantees hashing)
+        console.log("📝 Registering fresh Super Admin...");
+        const regRes = await fetch(registerUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: superAdminEmail, password })
+            body: JSON.stringify({
+                email: superAdminEmail,
+                password: password,
+                name: 'Abdellah Taha',
+                role: 'admin',
+                phone: '01000000000'
+            })
         });
 
-        if (loginRes.ok) {
-            console.log("✅ Super Admin already exists and verified.");
+        if (regRes.ok) {
+            console.log("✅ Super Admin Successfully Created/Reset via API!");
+            console.log("👉 Credentials: Abdellah@cosmutics.com / 123456789");
         } else {
-            console.log("⚠️ Super Admin missing or invalid. Attempting to Register...");
-
-            const regRes = await fetch(registerUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: superAdminEmail,
-                    password: password,
-                    name: 'Abdellah Taha',
-                    role: 'admin',
-                    phone: '01000000000'
-                })
-            });
-
-            if (regRes.ok) {
-                console.log("✅ Super Admin Successfully Created via API!");
-                console.log("👉 Credentials: Abdellah@cosmutics.com / 123456789");
-            } else {
-                const errText = await regRes.text();
-                console.error("❌ Failed to auto-seed Super Admin:", errText);
-                // Fallback: If it failed because "Email already exists" but password was wrong?
-                // We can't easily fix that without admin access or deleting db.json manually.
-            }
+            const errText = await regRes.text();
+            console.error("❌ Failed to auto-seed Super Admin:", errText);
         }
     } catch (e) {
         console.error("⚠️ Auto-seeding error:", e.message);
