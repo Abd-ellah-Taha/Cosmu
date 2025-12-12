@@ -23,40 +23,6 @@
   ],
   "products": [
     {
-      "id": 0,
-      "name": "ستجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيكز",
-      "nameEn": "Vitamin C Concentrated Serum",
-      "brand": "لوريال باريس",
-      "brandEn": "L'Oréal Paris",
-      "category": "العناية بالبشرة",
-      "categoryId": 1,
-      "price": 450,
-      "originalPrice": 550,
-      "discount": 18,
-      "rating": 4.8,
-      "reviews": 234,
-      "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400",
-      "images": [
-        "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600",
-        "https://images.unsplash.com/photo-1617897903246-719242758050?w=600",
-        "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600"
-      ],
-      "description": "تجربه الف وميتين تجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتيتجربه الف وميتي",
-      "features": [
-        "يفتح البشرة",
-        "يقلل التجاعيد",
-        "مضاد للأكسدة",
-        "ترطيب عميق"
-      ],
-      "inStock": true,
-      "isNew": false,
-      "isBestSeller": true,
-      "isFeatured": true,
-      "minStock": 10,
-      "currentStock": 45,
-      "expiryDate": "2026-05-20"
-    },
-    {
       "id": 1,
       "name": "سيروم فيتامين سي المركز",
       "nameEn": "Vitamin C Concentrated Serum",

@@ -5,13 +5,27 @@ import path from 'path';
 
 const server = jsonServer.create();
 const router = jsonServer.router(path.join(process.cwd(), 'db.json'));
-const middlewares = jsonServer.defaults();
+// Disable default CORS so we can use our own permissive one
+const middlewares = jsonServer.defaults({ noCors: true });
 
 // Bind the router db to the app
 server.db = router.db;
 
 // 1. CORS - Critical for frontend access
-server.use(cors());
+server.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+console.log('🔓 CORS Enabled for ALL origins (*)');
+
+// Pre-flight requests
+server.options('*', cors());
+
+// 1.5 Health Check Endpoint (Bypasses auth/db)
+server.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date(), message: 'Server is running 🚀' });
+});
 
 // 2. Body Parser
 server.use(jsonServer.bodyParser);
