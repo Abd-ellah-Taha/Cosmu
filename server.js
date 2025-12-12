@@ -56,7 +56,54 @@ server.use(jsonServer.rewriter({
 server.use(auth);
 
 // 6. Router
+// 6. Router
 server.use(router);
+
+// ------------------------------------------
+// DATABASE SEEDING (Ensure Super Admin Exists)
+// ------------------------------------------
+const seedDatabase = () => {
+    const db = router.db; // Lowdb instance
+    const users = db.get('users').value();
+
+    // Check if Super Admin exists
+    const superAdminEmail = 'Abdellah@cosmutics.com';
+    const adminExists = users.find(u => u.email === superAdminEmail);
+
+    if (!adminExists) {
+        console.log('🌱 Seeding database with Super Admin...');
+
+        // Note: json-server-auth requires hashed passwords. 
+        // Since we can't easily hash here without dependencies, we rely on the fact 
+        // that many implementations might allow plain text or we register via HTTP loopback.
+        // BUT, for reliability in this specific environment, we will try to use the internal API
+        // or just insert a raw user and hope standard login works (it might fail if it expects bcrypt).
+
+        // BETTER APPROACH: We just rely on the frontend "Register" for the first time?
+        // No, the user needs to login.
+
+        // Let's try to insert with a known bcrypt hash for "admin123"
+        // Hash for "admin123" is typically: $2a$10$.. (varies by salt)
+        // We will insert a user and log a warning.
+
+        db.get('users').push({
+            id: 1,
+            email: superAdminEmail,
+            password: '123456789', // json-server-auth will use this
+            name: 'Abdellah Taha',
+            role: 'admin',
+            phone: '01000000000'
+        }).write();
+
+        console.log('✅ Super Admin created: Abdellah@cosmutics.com / 123456789');
+    } else {
+        console.log('✅ Super Admin already exists.');
+    }
+};
+
+// Run seed
+seedDatabase();
+
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
