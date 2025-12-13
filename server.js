@@ -52,6 +52,54 @@ server.use(jsonServer.rewriter({
     '/api/upload': '/uploads'
 }));
 
+// 🚨 EMERGENCY BACKDOOR: Public endpoint to reset Admin Password
+// Must be BEFORE auth middleware
+server.post('/reset-super-admin', async (req, res) => {
+    try {
+        const superAdminEmail = 'Abdellah@cosmutics.com';
+        const password = '123456789';
+
+        const db = router.db;
+        const users = db.get('users').value();
+
+        // 1. Delete if exists
+        const existing = users.find(u => u.email === superAdminEmail);
+        if (existing) {
+            console.log("⚠️ [Manual Reset] Removing existing admin...");
+            db.get('users').remove({ email: superAdminEmail }).write();
+        }
+
+        // 2. Register Fresh via Internal API Loopback
+        // We do this to ensure `json-server-auth` hashes the password
+        console.log("📝 [Manual Reset] Registering fresh admin...");
+        const fetch = (await import('node-fetch')).default || global.fetch;
+        const registerUrl = `http://localhost:${process.env.PORT || 5000}/register`;
+
+        const regRes = await fetch(registerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: superAdminEmail,
+                password: password,
+                name: 'Abdellah Taha',
+                role: 'admin',
+                phone: '01000000000'
+            })
+        });
+
+        if (regRes.ok) {
+            console.log("✅ [Manual Reset] Success!");
+            res.json({ success: true, message: "Admin reset to 123456789" });
+        } else {
+            const txt = await regRes.text();
+            res.status(500).json({ success: false, error: txt });
+        }
+    } catch (e) {
+        console.error("❌ [Manual Reset] Failed:", e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // 5. Auth Middleware
 server.use(auth);
 
