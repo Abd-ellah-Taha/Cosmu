@@ -2,6 +2,7 @@ import jsonServer from 'json-server';
 import auth from 'json-server-auth';
 import cors from 'cors';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 
 const server = jsonServer.create();
 const router = jsonServer.router(path.join(process.cwd(), 'db.json'));
@@ -130,33 +131,27 @@ server.use(router);
 // DATABASE SEEDING (Ensure Super Admin Exists)
 // ------------------------------------------
 const seedDatabase = () => {
-    const db = router.db; // Lowdb instance
+    const db = router.db;
+
+    // Safety: Ensure 'users' collection exists
+    if (!db.has('users').value()) {
+        db.set('users', []).write();
+    }
+
     const users = db.get('users').value();
-
-    // Check if Super Admin exists
     const superAdminEmail = 'Abdellah@cosmutics.com';
-    const adminExists = users.find(u => u.email === superAdminEmail);
+    const existingAdmin = users.find(u => u.email === superAdminEmail);
 
-    if (!adminExists) {
+    if (!existingAdmin) {
         console.log('🌱 Seeding database with Super Admin...');
 
-        // Note: json-server-auth requires hashed passwords. 
-        // Since we can't easily hash here without dependencies, we rely on the fact 
-        // that many implementations might allow plain text or we register via HTTP loopback.
-        // BUT, for reliability in this specific environment, we will try to use the internal API
-        // or just insert a raw user and hope standard login works (it might fail if it expects bcrypt).
-
-        // BETTER APPROACH: We just rely on the frontend "Register" for the first time?
-        // No, the user needs to login.
-
-        // Let's try to insert with a known bcrypt hash for "admin123"
-        // Hash for "admin123" is typically: $2a$10$.. (varies by salt)
-        // We will insert a user and log a warning.
+        // Generate secure hash synchronously
+        const hashedPassword = bcrypt.hashSync('123456789', 8);
 
         db.get('users').push({
             id: 1,
             email: superAdminEmail,
-            password: '123456789', // json-server-auth will use this
+            password: hashedPassword,
             name: 'Abdellah Taha',
             role: 'admin',
             phone: '01000000000'
@@ -176,55 +171,4 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
     console.log(`✅ Custom JSON Server is running on port ${PORT}`);
     console.log(`Protected routes enabled.`);
-
-    // ------------------------------------------
-    // SELF-SEEDING (Ensure Super Admin Exists via API)
-    // ------------------------------------------
-    try {
-        const fetch = (await import('node-fetch')).default || global.fetch; // Robust fetch import
-        if (!fetch) {
-            console.error("⚠️ Node fetch not found. Skipping auto-seed. Please register manually.");
-            return;
-        }
-
-        const superAdminEmail = 'Abdellah@cosmutics.com';
-        const password = '123456789';
-
-        // 1. Force Reset Strategy: Always try to delete first to ensure clean state
-        console.log("🌱 enforcing Super Admin credentials...");
-
-        // Find user by email in lowdb direclty
-        const db = router.db;
-        const users = db.get('users').value();
-        const existingAdmin = users.find(u => u.email === superAdminEmail);
-
-        if (existingAdmin) {
-            console.log("⚠️ Found existing Super Admin. Removing to force password reset...");
-            db.get('users').remove({ email: superAdminEmail }).write();
-        }
-
-        // 2. Register fresh via API (Guarantees hashing)
-        console.log("📝 Registering fresh Super Admin...");
-        const regRes = await fetch(registerUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: superAdminEmail,
-                password: password,
-                name: 'Abdellah Taha',
-                role: 'admin',
-                phone: '01000000000'
-            })
-        });
-
-        if (regRes.ok) {
-            console.log("✅ Super Admin Successfully Created/Reset via API!");
-            console.log("👉 Credentials: Abdellah@cosmutics.com / 123456789");
-        } else {
-            const errText = await regRes.text();
-            console.error("❌ Failed to auto-seed Super Admin:", errText);
-        }
-    } catch (e) {
-        console.error("⚠️ Auto-seeding error:", e.message);
-    }
 });
