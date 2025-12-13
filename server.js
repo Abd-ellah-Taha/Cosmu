@@ -60,20 +60,38 @@ server.post('/reset-super-admin', async (req, res) => {
         const password = '123456789';
 
         const db = router.db;
+
+        // Safety: Ensure 'users' collection exists
+        if (!db.has('users').value()) {
+            console.log("⚠️ 'users' collection missing. Creating...");
+            db.set('users', []).write();
+        }
+
         const users = db.get('users').value();
 
         // 1. Delete if exists
-        const existing = users.find(u => u.email === superAdminEmail);
-        if (existing) {
-            console.log("⚠️ [Manual Reset] Removing existing admin...");
-            db.get('users').remove({ email: superAdminEmail }).write();
+        // Check if users is actually an array (Paranoia check)
+        if (Array.isArray(users)) {
+            const existing = users.find(u => u.email === superAdminEmail);
+            if (existing) {
+                console.log("⚠️ [Manual Reset] Removing existing admin...");
+                db.get('users').remove({ email: superAdminEmail }).write();
+            }
+        } else {
+            // Should not happen if we just set it, but good safety
+            console.log("⚠️ 'users' is not an array. Resetting...");
+            db.set('users', []).write();
         }
 
         // 2. Register Fresh via Internal API Loopback
         // We do this to ensure `json-server-auth` hashes the password
         console.log("📝 [Manual Reset] Registering fresh admin...");
         const fetch = (await import('node-fetch')).default || global.fetch;
-        const registerUrl = `http://localhost:${process.env.PORT || 5000}/register`;
+        // Use localhost with explicit port fallback
+        const appPort = process.env.PORT || 5000;
+        const registerUrl = `http://localhost:${appPort}/register`;
+
+        console.log(`🔗 Loopback URL: ${registerUrl}`);
 
         const regRes = await fetch(registerUrl, {
             method: 'POST',
@@ -92,7 +110,8 @@ server.post('/reset-super-admin', async (req, res) => {
             res.json({ success: true, message: "Admin reset to 123456789" });
         } else {
             const txt = await regRes.text();
-            res.status(500).json({ success: false, error: txt });
+            console.error("❌ Register failed:", txt);
+            res.status(500).json({ success: false, error: "Register Failed: " + txt });
         }
     } catch (e) {
         console.error("❌ [Manual Reset] Failed:", e);
