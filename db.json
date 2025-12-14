@@ -11,6 +11,18 @@
       "address": "",
       "createdAt": "2025-01-01T00:00:00.000Z",
       "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "email": "testimage1941275766@test.com",
+      "password": "$2a$10$um9q8hqvM0P2.Ap4s0OHAuwjVenyVxFatSZvsoOAh.wBrA4WQMeoa",
+      "name": "Test Image",
+      "phone": "",
+      "role": "customer",
+      "image": "",
+      "profilePicture": "data:image/png;base64,TESTDATA_PERSISTENCE_CHECK",
+      "address": "",
+      "createdAt": "2025-12-14T21:37:30.679Z"
     }
   ],
   "products": [
