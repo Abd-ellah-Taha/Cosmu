@@ -1,0 +1,12 @@
+# Render.com deployment configuration
+# This file configures static site deployment
+
+services:
+  - type: web
+    name: sobhi-cosmetics
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
