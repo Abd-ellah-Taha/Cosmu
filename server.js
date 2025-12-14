@@ -3,172 +3,375 @@ import auth from 'json-server-auth';
 import cors from 'cors';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const server = jsonServer.create();
-const router = jsonServer.router(path.join(process.cwd(), 'db.json'));
-// Disable default CORS so we can use our own permissive one
+const router = jsonServer.router(path.join(__dirname, 'db.json'));
 const middlewares = jsonServer.defaults({ noCors: true });
 
 // Bind the router db to the app
 server.db = router.db;
 
-// 1. CORS - Critical for frontend access
-server.use(cors({
+// ============================================
+// 1. CORS Configuration - MUST be first
+// ============================================
+const corsOptions = {
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-console.log('🔓 CORS Enabled for ALL origins (*)');
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
+};
 
-// Pre-flight requests
-server.options('*', cors());
+server.use(cors(corsOptions));
+server.options('*', cors(corsOptions));
+console.log('🔓 CORS Enabled for ALL origins');
 
-// 1.5 Health Check Endpoint (Bypasses auth/db)
-server.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date(), message: 'Server is running 🚀' });
-});
-
+// ============================================
 // 2. Body Parser
+// ============================================
 server.use(jsonServer.bodyParser);
 
-// 3. Custom Middleware for Logging
+// ============================================
+// 3. Request Logger
+// ============================================
 server.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        console.log('Body:', JSON.stringify(req.body));
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} ${req.url}`);
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
+        // Don't log passwords
+        const logBody = { ...req.body };
+        if (logBody.password) logBody.password = '***HIDDEN***';
+        console.log('📦 Body:', JSON.stringify(logBody));
     }
     next();
 });
 
-// 4. API Prefix Rewrites (Manual)
+// ============================================
+// 4. Health Check Endpoint (Before Auth)
+// ============================================
+server.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        message: 'Server is running 🚀',
+        version: '2.0.0'
+    });
+});
+
+// ============================================
+// 5. API Prefix Rewrites
+// ============================================
 server.use(jsonServer.rewriter({
     '/api/auth/login': '/login',
     '/api/auth/register': '/register',
-    '/api/auth/profile': '/600/users/1', // 600 means protected
     '/api/products': '/products',
     '/api/products/:id': '/products/:id',
     '/api/orders': '/orders',
     '/api/orders/:id': '/orders/:id',
-    '/api/orders/myorders': '/orders', // Filter handled by query params in frontend
-    '/api/upload': '/uploads'
+    '/api/categories': '/categories',
+    '/api/users': '/users',
+    '/api/users/:id': '/users/:id',
+    '/auth/login': '/login',
+    '/auth/register': '/register'
 }));
 
-// 🚨 EMERGENCY BACKDOOR: Public endpoint to reset Admin Password
-// Must be BEFORE auth middleware
-server.post('/reset-super-admin', async (req, res) => {
+// ============================================
+// 6. Custom Auth Endpoints (Before json-server-auth)
+// ============================================
+
+// Custom login with better response format
+server.post('/login', (req, res, next) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'البريد الإلكتروني وكلمة المرور مطلوبان'
+        });
+    }
+
+    const db = router.db;
+    const users = db.get('users').value() || [];
+    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+        console.log('❌ Login failed: User not found -', email);
+        return res.status(401).json({
+            success: false,
+            message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+        });
+    }
+
+    // Check password
+    const isMatch = bcrypt.compareSync(password, user.password);
+    if (!isMatch) {
+        console.log('❌ Login failed: Wrong password for -', email);
+        return res.status(401).json({
+            success: false,
+            message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+        });
+    }
+
+    // Generate simple token (in production, use proper JWT)
+    const token = `token_${user.id}_${Date.now()}`;
+
+    console.log('✅ Login successful:', email);
+
+    return res.json({
+        success: true,
+        accessToken: token,
+        user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            role: user.role || 'customer',
+            isAdmin: user.role === 'admin' || user.role === 'manager',
+            isSuperAdmin: user.email.toLowerCase() === 'admin@cosmutics.com'
+        }
+    });
+});
+
+// Custom register with better response format
+server.post('/register', (req, res, next) => {
+    const { email, password, name, phone, role } = req.body;
+
+    // Validation
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'البريد الإلكتروني وكلمة المرور مطلوبان'
+        });
+    }
+
+    if (!name || name.trim().length < 2) {
+        return res.status(400).json({
+            success: false,
+            message: 'الاسم مطلوب ويجب أن يكون حرفين على الأقل'
+        });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({
+            success: false,
+            message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+        });
+    }
+
+    const db = router.db;
+    const users = db.get('users').value() || [];
+
+    // Check if user exists
+    const existingUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
+        console.log('❌ Registration failed: Email exists -', email);
+        return res.status(400).json({
+            success: false,
+            message: 'هذا البريد الإلكتروني مسجل بالفعل'
+        });
+    }
+
+    // Hash password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Create new user
+    const newUser = {
+        id: users.length > 0 ? Math.max(...users.map(u => u.id || 0)) + 1 : 1,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        name: name.trim(),
+        phone: phone || '',
+        role: role || 'customer',
+        createdAt: new Date().toISOString()
+    };
+
+    // Save to database
+    db.get('users').push(newUser).write();
+
+    // Generate token
+    const token = `token_${newUser.id}_${Date.now()}`;
+
+    console.log('✅ Registration successful:', email);
+
+    return res.status(201).json({
+        success: true,
+        accessToken: token,
+        user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            phone: newUser.phone,
+            role: newUser.role,
+            isAdmin: newUser.role === 'admin' || newUser.role === 'manager',
+            isSuperAdmin: false
+        }
+    });
+});
+
+// Get current user profile
+server.get('/profile', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'غير مصرح' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const parts = token.split('_');
+    if (parts.length < 2) {
+        return res.status(401).json({ message: 'Token غير صالح' });
+    }
+
+    const userId = parseInt(parts[1]);
+    const db = router.db;
+    const user = db.get('users').find({ id: userId }).value();
+
+    if (!user) {
+        return res.status(404).json({ message: 'المستخدم غير موجود' });
+    }
+
+    res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role
+    });
+});
+
+// Reset super admin endpoint (for emergencies)
+server.post('/reset-super-admin', (req, res) => {
     try {
-        const superAdminEmail = 'Abdellah@cosmutics.com';
+        const db = router.db;
+        const superAdminEmail = 'admin@cosmutics.com';
         const password = '123456789';
 
-        const db = router.db;
+        // Remove existing admin if exists
+        db.get('users').remove({ email: superAdminEmail }).write();
 
-        // Safety: Ensure 'users' collection exists
-        if (!db.has('users').value()) {
-            console.log("⚠️ 'users' collection missing. Creating...");
-            db.set('users', []).write();
-        }
+        // Create new admin with hashed password
+        const hashedPassword = bcrypt.hashSync(password, 10);
 
-        const users = db.get('users').value();
+        const adminUser = {
+            id: 1,
+            email: superAdminEmail,
+            password: hashedPassword,
+            name: 'Abdellah Taha',
+            phone: '01000000000',
+            role: 'admin',
+            createdAt: new Date().toISOString()
+        };
 
-        // 1. Delete if exists
-        // Check if users is actually an array (Paranoia check)
-        if (Array.isArray(users)) {
-            const existing = users.find(u => u.email === superAdminEmail);
-            if (existing) {
-                console.log("⚠️ [Manual Reset] Removing existing admin...");
-                db.get('users').remove({ email: superAdminEmail }).write();
-            }
-        } else {
-            // Should not happen if we just set it, but good safety
-            console.log("⚠️ 'users' is not an array. Resetting...");
-            db.set('users', []).write();
-        }
+        db.get('users').push(adminUser).write();
 
-        // 2. Register Fresh via Internal API Loopback
-        // We do this to ensure `json-server-auth` hashes the password
-        console.log("📝 [Manual Reset] Registering fresh admin...");
-        const fetch = (await import('node-fetch')).default || global.fetch;
-        // Use localhost with explicit port fallback
-        const appPort = process.env.PORT || 5000;
-        const registerUrl = `http://localhost:${appPort}/register`;
-
-        console.log(`🔗 Loopback URL: ${registerUrl}`);
-
-        const regRes = await fetch(registerUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: superAdminEmail,
-                password: password,
-                name: 'Abdellah Taha',
-                role: 'admin',
-                phone: '01000000000'
-            })
+        console.log('✅ Super Admin reset successfully');
+        res.json({
+            success: true,
+            message: 'تم إعادة تعيين حساب المدير بنجاح',
+            credentials: { email: superAdminEmail, password: password }
         });
-
-        if (regRes.ok) {
-            console.log("✅ [Manual Reset] Success!");
-            res.json({ success: true, message: "Admin reset to 123456789" });
-        } else {
-            const txt = await regRes.text();
-            console.error("❌ Register failed:", txt);
-            res.status(500).json({ success: false, error: "Register Failed: " + txt });
-        }
-    } catch (e) {
-        console.error("❌ [Manual Reset] Failed:", e);
-        res.status(500).json({ error: e.message });
+    } catch (error) {
+        console.error('❌ Reset failed:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// 5. Auth Middleware
-server.use(auth);
+// ============================================
+// 7. Use default middlewares (static files, etc)
+// ============================================
+server.use(middlewares);
 
-// 6. Router
-// 6. Router
+// ============================================
+// 8. Router (handles all other requests)
+// ============================================
 server.use(router);
 
-// ------------------------------------------
-// DATABASE SEEDING (Ensure Super Admin Exists)
-// ------------------------------------------
+// ============================================
+// 9. Error Handler
+// ============================================
+server.use((err, req, res, next) => {
+    console.error('❌ Server Error:', err);
+    res.status(500).json({
+        success: false,
+        message: 'حدث خطأ في السيرفر',
+        error: err.message
+    });
+});
+
+// ============================================
+// DATABASE SEEDING
+// ============================================
 const seedDatabase = () => {
     const db = router.db;
 
-    // Safety: Ensure 'users' collection exists
+    // Ensure users collection exists
     if (!db.has('users').value()) {
         db.set('users', []).write();
     }
 
+    // Ensure other collections exist
+    if (!db.has('products').value()) {
+        db.set('products', []).write();
+    }
+    if (!db.has('orders').value()) {
+        db.set('orders', []).write();
+    }
+    if (!db.has('categories').value()) {
+        db.set('categories', []).write();
+    }
+
+    // Check for super admin
     const users = db.get('users').value();
-    const superAdminEmail = 'Abdellah@cosmutics.com';
+    const superAdminEmail = 'admin@cosmutics.com';
     const existingAdmin = users.find(u => u.email === superAdminEmail);
 
     if (!existingAdmin) {
-        console.log('🌱 Seeding database with Super Admin...');
+        console.log('🌱 Seeding Super Admin...');
 
-        // Generate secure hash synchronously
-        const hashedPassword = bcrypt.hashSync('123456789', 8);
+        const hashedPassword = bcrypt.hashSync('123456789', 10);
 
         db.get('users').push({
             id: 1,
             email: superAdminEmail,
             password: hashedPassword,
             name: 'Abdellah Taha',
+            phone: '01000000000',
             role: 'admin',
-            phone: '01000000000'
+            createdAt: new Date().toISOString()
         }).write();
 
-        console.log('✅ Super Admin created: Abdellah@cosmutics.com / 123456789');
+        console.log('✅ Super Admin created: admin@cosmutics.com / 123456789');
     } else {
-        console.log('✅ Super Admin already exists.');
+        console.log('✅ Super Admin exists');
     }
 };
 
 // Run seed
 seedDatabase();
 
-
+// ============================================
+// START SERVER
+// ============================================
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, async () => {
-    console.log(`✅ Custom JSON Server is running on port ${PORT}`);
-    console.log(`Protected routes enabled.`);
+server.listen(PORT, () => {
+    console.log('');
+    console.log('╔════════════════════════════════════════════╗');
+    console.log('║     🚀 Sobhi Cosmetics API Server          ║');
+    console.log('╠════════════════════════════════════════════╣');
+    console.log(`║  🌐 Running on: http://localhost:${PORT}      ║`);
+    console.log('║  📦 Database: db.json                      ║');
+    console.log('╚════════════════════════════════════════════╝');
+    console.log('');
+    console.log('📍 Available Endpoints:');
+    console.log('   POST /login          - User login');
+    console.log('   POST /register       - User registration');
+    console.log('   GET  /profile        - Get user profile');
+    console.log('   GET  /products       - Get all products');
+    console.log('   GET  /orders         - Get all orders');
+    console.log('   GET  /users          - Get all users (admin)');
+    console.log('   GET  /health         - Health check');
+    console.log('   POST /reset-super-admin - Reset admin');
+    console.log('');
 });

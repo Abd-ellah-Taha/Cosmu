@@ -1,24 +1,13 @@
 {
   "users": [
     {
-      "id": 0,
-      "name": "Cosmutics Admin (Demo)",
+      "id": 1,
       "email": "admin@cosmutics.com",
-      "password": "$2a$10$nxT3.gEbKa4eCOC2C8N8F.im4WGkQk2ox0kl32QPtJT/Yb5O42jay",
-      "phone": "0000000000",
+      "password": "$2a$10$ebic62EZMrjjDiOwc8/eS.QZ011N.7t7kmmSOIW/tOmiZFhfeE83G",
+      "name": "مدير النظام",
+      "phone": "01000000000",
       "role": "admin",
-      "isAdmin": true,
-      "isSuperAdmin": true
-    },
-    {
-      "email": "user@cosmutics.com",
-      "password": "$2a$10$Drj4JbyCkbKr3U7w28/JS.ZHOVVKjLQwIEFRMH3aDH5zw1ktKzvvq",
-      "name": "عبداللاه طه عبداللاه",
-      "phone": "01096559531",
-      "role": "admin",
-      "isAdmin": true,
-      "isSuperAdmin": true,
-      "id": 1
+      "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ],
   "products": [
@@ -181,11 +170,11 @@
       "isBestSeller": true,
       "isFeatured": true,
       "minStock": 8,
-      "currentStock": 0,
+      "currentStock": 25,
       "expiryDate": "2028-02-20"
     },
     {
-      "id": 16,
+      "id": 6,
       "name": "كريم حفاضات واقي",
       "nameEn": "Diaper Rash Cream",
       "brand": "سودوكريم",
@@ -213,14 +202,14 @@
       "isBestSeller": true,
       "isFeatured": true,
       "minStock": 200,
-      "currentStock": 5,
-      "expiryDate": "2025-01-15"
+      "currentStock": 50,
+      "expiryDate": "2026-01-15"
     }
   ],
   "orders": [
     {
       "id": 1,
-      "user": 1,
+      "userId": 1,
       "customer": "أحمد محمد",
       "phone": "01012345678",
       "address": "القاهرة، المعادي",
@@ -246,31 +235,45 @@
   "categories": [
     {
       "id": 1,
-      "name": "العناية بالبشرة"
+      "name": "العناية بالبشرة",
+      "nameEn": "Skincare",
+      "icon": "🧴"
     },
     {
       "id": 2,
-      "name": "المكياج"
+      "name": "المكياج",
+      "nameEn": "Makeup",
+      "icon": "💄"
     },
     {
       "id": 3,
-      "name": "العطور"
+      "name": "العطور",
+      "nameEn": "Perfumes",
+      "icon": "🌸"
     },
     {
       "id": 4,
-      "name": "العناية بالشعر"
+      "name": "العناية بالشعر",
+      "nameEn": "Hair Care",
+      "icon": "💇‍♀️"
     },
     {
       "id": 5,
-      "name": "العناية بالجسم"
+      "name": "العناية بالجسم",
+      "nameEn": "Body Care",
+      "icon": "🛁"
     },
     {
       "id": 6,
-      "name": "الصيدلية"
+      "name": "الصيدلية",
+      "nameEn": "Pharmacy",
+      "icon": "💊"
     },
     {
       "id": 7,
-      "name": "العناية بالأطفال"
+      "name": "العناية بالأطفال",
+      "nameEn": "Baby Care",
+      "icon": "👶"
     }
   ]
 }
