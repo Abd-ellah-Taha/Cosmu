@@ -37,9 +37,9 @@ server.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 console.log('🔓 CORS Enabled for ALL origins');
 
 // ============================================
-// 2. Body Parser
+// 2. Body Parser (Handled by custom configuration above)
 // ============================================
-server.use(jsonServer.bodyParser);
+// server.use(jsonServer.bodyParser); // REMOVED to avoid conflict
 
 // ============================================
 // 3. Request Logger
