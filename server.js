@@ -4,6 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
+import bodyParser from 'body-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,12 @@ const corsOptions = {
 
 server.use(cors(corsOptions));
 server.options('*', cors(corsOptions));
+
+// ============================================
+// 2. Body Parser (High Limit for Images)
+// ============================================
+server.use(bodyParser.json({ limit: '50mb' }));
+server.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 console.log('🔓 CORS Enabled for ALL origins');
 
 // ============================================
