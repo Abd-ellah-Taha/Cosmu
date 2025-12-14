@@ -177,6 +177,35 @@ server.post('/register', (req, res, next) => {
     // Hash password
     const hashedPassword = bcrypt.hashSync(password, 10);
 
+    // Determine role - only allow admin/manager if created by a Super Admin
+    let finalRole = 'customer';
+    if (role && role !== 'customer') {
+        // Authenticate request to see if it's from Super Admin
+        const authHeader = req.headers.authorization;
+        let isAuthorized = false;
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+                const parts = authHeader.split(' ')[1].split('_');
+                if (parts.length >= 2) {
+                    const requesterId = parseInt(parts[1]);
+                    const requester = users.find(u => u.id === requesterId);
+                    if (requester && requester.email.toLowerCase() === 'admin@cosmutics.com') {
+                        isAuthorized = true;
+                    }
+                }
+            } catch (e) {
+                console.error('Role auth check failed:', e);
+            }
+        }
+
+        if (isAuthorized) {
+            finalRole = role;
+        } else {
+            console.warn(`⚠️ Unauthorized role assignment attempt: ${email} wanted ${role}`);
+        }
+    }
+
     // Create new user
     const newUser = {
         id: users.length > 0 ? Math.max(...users.map(u => u.id || 0)) + 1 : 1,
@@ -184,7 +213,11 @@ server.post('/register', (req, res, next) => {
         password: hashedPassword,
         name: name.trim(),
         phone: phone || '',
-        role: role || 'customer',
+        role: finalRole,
+        // Initialize other profile fields
+        image: '',
+        profilePicture: '',
+        address: '',
         createdAt: new Date().toISOString()
     };
 
@@ -237,8 +270,91 @@ server.get('/profile', (req, res) => {
         email: user.email,
         name: user.name,
         phone: user.phone,
-        role: user.role
+        role: user.role,
+        image: user.image,
+        profilePicture: user.profilePicture,
+        address: user.address,
+        isAdmin: user.role === 'admin' || user.role === 'manager',
+        isSuperAdmin: user.email.toLowerCase() === 'admin@cosmutics.com'
     });
+});
+
+// Update current user profile
+server.patch('/profile', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'غير مصرح' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const parts = token.split('_');
+    if (parts.length < 2) {
+        return res.status(401).json({ message: 'Token غير صالح' });
+    }
+
+    const userId = parseInt(parts[1]);
+    const db = router.db;
+    const user = db.get('users').find({ id: userId }).value();
+
+    if (!user) {
+        return res.status(404).json({ message: 'المستخدم غير موجود' });
+    }
+
+    const updates = req.body;
+    // Don't allow updating sensitive fields directly here
+    delete updates.id;
+    delete updates.password;
+    delete updates.role; // Role updates should be admin only
+
+    db.get('users')
+        .find({ id: userId })
+        .assign(updates)
+        .write();
+
+    const updatedUser = db.get('users').find({ id: userId }).value();
+
+    res.json({
+        success: true,
+        user: {
+            ...updatedUser,
+            isAdmin: updatedUser.role === 'admin' || updatedUser.role === 'manager',
+            isSuperAdmin: updatedUser.email.toLowerCase() === 'admin@cosmutics.com'
+        }
+    });
+});
+
+// Middleware to protect admin management routes
+server.use((req, res, next) => {
+    // Only intercept writes to users collection if attempting to modify roles/admins
+    if ((req.method === 'POST' || req.method === 'DELETE' || req.method === 'PUT' || req.method === 'PATCH') &&
+        req.path.includes('/users')) {
+
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return next(); // json-server-auth will handle public logic if any
+
+        try {
+            const token = authHeader.split(' ')[1];
+            const userId = parseInt(token.split('_')[1]);
+            const db = router.db;
+            const requestUser = db.get('users').find({ id: userId }).value();
+
+            // Check if Super Admin
+            const isSuperAdmin = requestUser?.email?.toLowerCase() === 'admin@cosmutics.com';
+
+            // If deleting a user, must be super admin
+            if (req.method === 'DELETE' && !isSuperAdmin) {
+                return res.status(403).json({ message: 'فقط المدير العام يمكنه حذف المستخدمين' });
+            }
+
+            // If modifying role, must be super admin
+            if (req.body && req.body.role && req.body.role !== 'customer' && !isSuperAdmin) {
+                return res.status(403).json({ message: 'فقط المدير العام يمكنه تعيين أدوار إدارية' });
+            }
+        } catch (e) {
+            console.error('Middleware check failed:', e);
+        }
+    }
+    next();
 });
 
 // Reset super admin endpoint (for emergencies)

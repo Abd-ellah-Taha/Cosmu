@@ -7,7 +7,10 @@
       "name": "مدير النظام",
       "phone": "01000000000",
       "role": "admin",
-      "createdAt": "2025-01-01T00:00:00.000Z"
+      "image": "",
+      "address": "",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
     }
   ],
   "products": [
@@ -43,7 +46,8 @@
       "isFeatured": true,
       "minStock": 10,
       "currentStock": 45,
-      "expiryDate": "2026-05-20"
+      "expiryDate": "2026-05-20",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": 2,
@@ -75,7 +79,8 @@
       "isFeatured": true,
       "minStock": 15,
       "currentStock": 20,
-      "expiryDate": "2025-12-30"
+      "expiryDate": "2025-12-30",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": 3,
@@ -106,7 +111,8 @@
       "isFeatured": false,
       "minStock": 20,
       "currentStock": 8,
-      "expiryDate": "2026-08-15"
+      "expiryDate": "2026-08-15",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": 4,
@@ -139,7 +145,8 @@
       "isFeatured": true,
       "minStock": 5,
       "currentStock": 12,
-      "expiryDate": "2027-01-10"
+      "expiryDate": "2027-01-10",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": 5,
@@ -171,7 +178,8 @@
       "isFeatured": true,
       "minStock": 8,
       "currentStock": 25,
-      "expiryDate": "2028-02-20"
+      "expiryDate": "2028-02-20",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     },
     {
       "id": 6,
@@ -203,7 +211,8 @@
       "isFeatured": true,
       "minStock": 200,
       "currentStock": 50,
-      "expiryDate": "2026-01-15"
+      "expiryDate": "2026-01-15",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ],
   "orders": [
@@ -212,9 +221,16 @@
       "userId": 1,
       "customer": "أحمد محمد",
       "phone": "01012345678",
+      "email": "",
       "address": "القاهرة، المعادي",
+      "city": "القاهرة",
       "total": 1250,
+      "subtotal": 1250,
+      "shippingCost": 0,
+      "discount": 0,
       "status": "pending",
+      "paymentMethod": "cash",
+      "paymentStatus": "pending",
       "items": [
         {
           "productId": 1,
@@ -229,7 +245,9 @@
           "price": 850
         }
       ],
-      "createdAt": "2025-12-09T10:30:00.000Z"
+      "notes": "",
+      "createdAt": "2025-12-09T10:30:00.000Z",
+      "updatedAt": "2025-12-09T10:30:00.000Z"
     }
   ],
   "categories": [
@@ -237,43 +255,192 @@
       "id": 1,
       "name": "العناية بالبشرة",
       "nameEn": "Skincare",
-      "icon": "🧴"
+      "icon": "🧴",
+      "image": "",
+      "description": "منتجات العناية بالبشرة",
+      "isActive": true
     },
     {
       "id": 2,
       "name": "المكياج",
       "nameEn": "Makeup",
-      "icon": "💄"
+      "icon": "💄",
+      "image": "",
+      "description": "منتجات المكياج والتجميل",
+      "isActive": true
     },
     {
       "id": 3,
       "name": "العطور",
       "nameEn": "Perfumes",
-      "icon": "🌸"
+      "icon": "🌸",
+      "image": "",
+      "description": "العطور الفاخرة",
+      "isActive": true
     },
     {
       "id": 4,
       "name": "العناية بالشعر",
       "nameEn": "Hair Care",
-      "icon": "💇‍♀️"
+      "icon": "💇‍♀️",
+      "image": "",
+      "description": "منتجات العناية بالشعر",
+      "isActive": true
     },
     {
       "id": 5,
       "name": "العناية بالجسم",
       "nameEn": "Body Care",
-      "icon": "🛁"
+      "icon": "🛁",
+      "image": "",
+      "description": "منتجات العناية بالجسم",
+      "isActive": true
     },
     {
       "id": 6,
       "name": "الصيدلية",
       "nameEn": "Pharmacy",
-      "icon": "💊"
+      "icon": "💊",
+      "image": "",
+      "description": "منتجات الصيدلية والأدوية",
+      "isActive": true
     },
     {
       "id": 7,
       "name": "العناية بالأطفال",
       "nameEn": "Baby Care",
-      "icon": "👶"
+      "icon": "👶",
+      "image": "",
+      "description": "منتجات الأطفال",
+      "isActive": true
+    }
+  ],
+  "brands": [
+    {
+      "id": 1,
+      "name": "لوريال باريس",
+      "nameEn": "L'Oréal Paris",
+      "logo": "",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "نيتروجينا",
+      "nameEn": "Neutrogena",
+      "logo": "",
+      "isActive": true
+    },
+    {
+      "id": 3,
+      "name": "ذا بودي شوب",
+      "nameEn": "The Body Shop",
+      "logo": "",
+      "isActive": true
+    },
+    {
+      "id": 4,
+      "name": "ماك",
+      "nameEn": "MAC",
+      "logo": "",
+      "isActive": true
+    },
+    {
+      "id": 5,
+      "name": "أناستازيا",
+      "nameEn": "Anastasia Beverly Hills",
+      "logo": "",
+      "isActive": true
+    },
+    {
+      "id": 6,
+      "name": "سودوكريم",
+      "nameEn": "Sudocrem",
+      "logo": "",
+      "isActive": true
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "productId": 1,
+      "userId": 1,
+      "userName": "سارة أحمد",
+      "rating": 5,
+      "comment": "منتج رائع جداً، بشرتي أصبحت مشرقة!",
+      "isApproved": true,
+      "createdAt": "2025-12-01T00:00:00.000Z"
+    }
+  ],
+  "wishlist": [],
+  "carts": [],
+  "coupons": [
+    {
+      "id": 1,
+      "code": "WELCOME10",
+      "discount": 10,
+      "type": "percentage",
+      "minOrderAmount": 100,
+      "maxUses": 100,
+      "usedCount": 0,
+      "isActive": true,
+      "expiresAt": "2026-12-31T23:59:59.000Z",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": 1,
+      "userId": 1,
+      "title": "مرحباً بك!",
+      "message": "مرحباً بك في صبحي كوزماتكس",
+      "type": "info",
+      "isRead": false,
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "settings": {
+    "storeName": "صبحي كوزماتكس",
+    "storeNameEn": "Sobhi Cosmetics",
+    "logo": "",
+    "email": "info@sobhicosmetics.com",
+    "phone": "01000000000",
+    "address": "القاهرة، مصر",
+    "currency": "EGP",
+    "currencySymbol": "ج.م",
+    "language": "ar",
+    "freeShippingThreshold": 500,
+    "shippingCost": 50,
+    "taxRate": 14,
+    "socialMedia": {
+      "facebook": "",
+      "instagram": "",
+      "twitter": "",
+      "whatsapp": ""
+    },
+    "seo": {
+      "title": "صبحي كوزماتكس - أفضل منتجات التجميل",
+      "description": "تسوقي أفضل منتجات التجميل والعناية بالبشرة",
+      "keywords": "تجميل, مكياج, عناية بالبشرة, عطور"
+    }
+  },
+  "inventory": [
+    {
+      "id": 1,
+      "productId": 1,
+      "quantity": 45,
+      "minQuantity": 10,
+      "lastRestocked": "2025-12-01T00:00:00.000Z",
+      "notes": ""
+    }
+  ],
+  "activityLog": [
+    {
+      "id": 1,
+      "userId": 1,
+      "action": "login",
+      "details": "تسجيل دخول ناجح",
+      "ip": "",
+      "createdAt": "2025-01-01T00:00:00.000Z"
     }
   ]
 }
