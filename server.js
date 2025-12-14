@@ -308,10 +308,20 @@ server.patch('/profile', (req, res) => {
     }
 
     const updates = req.body;
-    // Don't allow updating sensitive fields directly here
+
+    // Handle password update securely
+    if (updates.password) {
+        if (updates.password.length < 6) {
+            return res.status(400).json({ message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+        }
+        updates.password = bcrypt.hashSync(updates.password, 10);
+    } else {
+        delete updates.password; // If no password provided, ensure we don't accidentally overwrite with null
+    }
+
+    // Don't allow updating formatted ID or Role (role is handled by admin middleware)
     delete updates.id;
-    delete updates.password;
-    delete updates.role; // Role updates should be admin only
+    delete updates.role;
 
     db.get('users')
         .find({ id: userId })
